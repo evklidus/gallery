@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:garo/models/painting_entity.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 
 class Painting extends StatelessWidget {
-  const Painting({Key? key}) : super(key: key);
+  const Painting({
+    Key? key,
+    required this.painting,
+  }) : super(key: key);
+
+  final PaintingEntity painting;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +19,7 @@ class Painting extends StatelessWidget {
           alignment: Alignment.center,
           padding: EdgeInsets.only(top: 10.h),
           child: Image.network(
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/970px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+            painting.paintingUrl,
             width: 70.w,
             fit: BoxFit.contain,
           ),
@@ -22,7 +28,7 @@ class Painting extends StatelessWidget {
           height: 2.5.h,
         ),
         Text(
-          'Vincent van Gogh',
+          painting.author,
           style: TextStyle(fontSize: 16.sp, color: Colors.blueGrey),
         ),
       ],
