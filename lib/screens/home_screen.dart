@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:blur/blur.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:garo/data.dart';
 import 'package:garo/screens/painting_screen.dart';
 import 'package:garo/wigets/painting.dart';
@@ -17,6 +20,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int pageIndex = 0;
   final Data data = Data();
+  bool excursionStarted = false;
+  bool speakingStarted = false;
+  late final FlutterTts flutterTts;
+  startExcursion(String text, [bool isLast = false]) async {
+    await flutterTts.setLanguage("en-US");
+    await flutterTts.speak(text);
+    flutterTts.setCompletionHandler(() async {
+      if (!isLast) {
+        await _pageController.nextPage(duration: const Duration(microseconds: 500), curve: Curves.easeIn);
+      }
+    });
+    if (isLast) {
+      excursionStarted = false;
+    }
+  }
+
+  @override
+  void initState() {
+    flutterTts = FlutterTts();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,18 +54,45 @@ class _HomeScreenState extends State<HomeScreen> {
           itemCount: data.paintingList.length,
           onPageChanged: (index) => setState(() {
             pageIndex = index;
+            if (excursionStarted) {
+              final painting = data.paintingList[index];
+              final textForSpeak = painting.author + painting.name + painting.date + painting.description;
+              startExcursion(textForSpeak, index == (data.paintingList.length - 1));
+            }
           }),
           itemBuilder: (context, index) {
+            final painting = data.paintingList[index];
+            final textForSpeak = painting.author + painting.name + painting.date + painting.description;
             return GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PaintingScreen(
-                      painting: data.paintingList[index],
+                if (index == pageIndex) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PaintingScreen(
+                        painting: painting,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
+              },
+              onLongPress: () async {
+                if (excursionStarted) {
+                  excursionStarted = false;
+                  await flutterTts.pause();
+                } else {
+                  excursionStarted = true;
+                  await startExcursion(textForSpeak, data.paintingList[index] == data.paintingList.last);
+                }
+              },
+              onDoubleTap: () async {
+                if (speakingStarted) {
+                  speakingStarted = false;
+                  await flutterTts.pause();
+                } else {
+                  speakingStarted = true;
+                  await flutterTts.speak(textForSpeak);
+                }
               },
               child: Stack(
                 children: [
@@ -51,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     colorOpacity: index == pageIndex ? 0 : 0.5,
                     child: Transform.scale(
                       scale: index == pageIndex ? 1.25 : 1,
-                      child: Painting(painting: data.paintingList[index]),
+                      child: Painting(painting: painting),
                     ),
                   ),
                 ],
